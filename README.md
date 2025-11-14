@@ -1,7 +1,7 @@
 # Bayesian Linear Regression Simulation & Analysis
   *Supervised by Professor Alex Franks*  
   *PSTAT 115 - Honors Contract*
-  [Estimated complettion: December 6, 2025)
+  [Estimated completion: December 6, 2025]
 
 * Research question: With Bayesian estimation, how uncertain are we about the relationship between digital access, education, GDP and life expectancy?
 
