@@ -1,0 +1,144 @@
+---
+title: "honors contract 115"
+author: "Kacie Chong"
+date: "2025-11-09"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Load necessary pacakges
+
+library(WDI)        
+library(tidyverse)  
+library(broom)      
+library(ggplot2)   
+library(rstanarm)
+library(tidybayes)
+library(bayesplot)
+```
+
+```{r}
+# Load data from the World Bank (decided to use 2015-20)
+
+raw <- WDI(
+  indicator = c(
+    "IT.NET.USER.ZS",   # Internet users (% of population)
+    "SE.SEC.ENRR",      # 2ndary school enrollment (% gross)
+    "NY.GDP.PCAP.CD",   # GDP/ capita (USD)
+    "SP.DYN.LE00.IN"    # Life expectancy @ birth (yrs)
+  ),
+  start = 2015, end = 2020,
+  extra = TRUE
+)
+```
+
+```{r}
+# Clean and summarize data
+
+cleaned <- raw %>%
+  # kept rows only w/ all required indicators
+  filter(!is.na(IT.NET.USER.ZS),
+         !is.na(SE.SEC.ENRR),
+         !is.na(NY.GDP.PCAP.CD),
+         !is.na(SP.DYN.LE00.IN)) %>%
+  # avg values over 2015–20 per country
+  group_by(country, region, income) %>%
+  summarize(
+    internet = mean(IT.NET.USER.ZS, na.rm = TRUE),
+    school_enroll = mean(SE.SEC.ENRR, na.rm = TRUE),
+    gdp = mean(NY.GDP.PCAP.CD, na.rm = TRUE),
+    lifeexp = mean(SP.DYN.LE00.IN, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  # removed remaining NAs + TRANSFORM variables
+  filter(!is.na(internet), !is.na(school_enroll), !is.na(lifeexp)) %>%
+  mutate(
+    log_gdp = log(gdp + 1),                 
+    internet_c = internet - mean(internet),
+    school_c = school_enroll - mean(school_enroll),
+    log_gdp_c = log_gdp - mean(log_gdp)
+  )
+
+summary(cleaned)
+```
+
+```{r}
+# Visual checks
+
+ggplot(cleaned, aes(x = internet, y = lifeexp)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "blue") +
+  labs(title = "Life Expectancy vs Internet Access",
+       x = "Internet Users (% population)",
+       y = "Life Expectancy (years)")
+
+ggplot(cleaned, aes(x = school_enroll, y = lifeexp)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "darkgreen") +
+  labs(title = "Life Expectancy vs. School Enrollment",
+       x = "School Enrollment (% gross)",
+       y = "Life Expectancy (years)")
+
+ggplot(cleaned, aes(x = log_gdp, y = lifeexp)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "purple") +
+  labs(title = "Life Expectancy vs GDP per capita",
+       x = "log(GDP per capita, USD)",
+       y = "Life Expectancy (years)")
+```
+
+```{r}
+# Prior plots
+
+# Prior for Intercept (beta_0)
+x0 <- seq(40, 100, length.out = 200)
+y0 <- dnorm(x0, mean = 72, sd = 10)
+ggplot(data.frame(x0, y0), aes(x = x0, y = y0)) +
+  geom_line() +
+  labs(x = "Intercept (beta_0)", y = "Prior density", title = "Prior for Intercept")
+
+# Prior for Internet coefficient (beta_1) # same for rest of predictors
+x1 <- seq(-20, 20, length.out = 200)
+y1 <- dnorm(x1, mean = 0, sd = 5)
+ggplot(data.frame(x1, y1), aes(x = x1, y = y1)) +
+  geom_line() +
+  labs(x = "Internet coefficient (beta_1)", y = "Prior density", title = "Prior for Internet")
+
+# Prior for sigma (residual SD)
+x_sigma <- seq(0, 20, length.out = 200)
+y_sigma <- dexp(x_sigma, rate = 0.1)
+ggplot(data.frame(x_sigma, y_sigma), aes(x = x_sigma, y = y_sigma)) +
+  geom_line() +
+  labs(x = "Sigma (residual SD)", y = "Prior density", title = "Prior for sigma")
+```
+
+```{r}
+# Fit Bayesian linear regression using rstanarm (from 9.3.1 of Bayes Rule)
+
+set.seed(123)
+wdi_model <- stan_glm(
+lifeexp ~ internet_c + school_c + log_gdp_c,
+data = cleaned,
+family = gaussian(),
+prior_intercept = normal(72, 10),
+prior = normal(0, 5),
+prior_aux = exponential(0.1), # for sigma
+chains = 4, iter = 2000
+)
+```
+
+```{r}
+# Check convergence diagnostics
+neff_ratio(wdi_model)
+rhat(wdi_model)
+
+# Trace plots
+mcmc_trace(as.array(wdi_model))
+
+# Density overlays
+mcmc_dens_overlay(as.array(wdi_model))
+```
