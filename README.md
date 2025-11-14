@@ -13,6 +13,6 @@
   - Discussions of posterior inference with MCMC simulation
 
 * Resource: 
-  - Chapters 9-11 of [Bayes Rules]([https://github.com/kaciechong/TuringTrust](https://www.bayesrulesbook.com/))
+  - Chapters 9-11 of [Bayes Rules]([https://www.bayesrulesbook.com/])
 
 
