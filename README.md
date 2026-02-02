@@ -2,6 +2,8 @@
   *Supervised by Professor Alex Franks*  
   *Honors Research Project*
 
+* [*Final Report*](https://docs.google.com/document/d/1qYTWPGcex-5T08MB8xDvcEyvVq-kscgN5-L5VxWbWg4/edit?usp=sharing)
+
 * Research question: With Bayesian estimation, how uncertain are we about the relationship between digital access, education, GDP and life expectancy?
 
 * Goal: Apply Bayesian linear regression in R to quantify uncertainty in relationships among digital access, education, GDP, and life expectancy using informed priors, MCMC sampling, and convergence diagnostics
@@ -13,6 +15,8 @@
 
 * Resource: 
   - Chapters 9–11 of [*Bayes Rules*](https://www.bayesrulesbook.com/)
+ 
+  
 
 
 
